@@ -1,8 +1,10 @@
 import type { Reporter, TestCase, TestResult } from "@playwright/test/reporter";
+import stripAnsi from "strip-ansi";
 import { loadConfig } from "../config/loader.js";
 import { QTestClient } from "../core/qtest/client.js";
 import { submitTestLogs, waitForJob } from "../core/qtest/endpoints/runs.js";
 import type { AutomationRequest, TestLog } from "../core/qtest/types.js";
+import { ApiError } from "../utils/errors.js";
 
 export interface QTestReporterOptions {
 	wait?: boolean;
@@ -35,17 +37,20 @@ export default class QTestReporter implements Reporter {
 		const endTime = new Date(startTime.getTime() + result.duration);
 
 		const testLog: TestLog = {
-			name: test.titlePath().join(" › "),
+			name: test
+				.titlePath()
+				.filter((p) => p !== "")
+				.join(" › "),
 			status: QTEST_STATUS_MAP[result.status] ?? "FAIL",
 			exe_start_date: startTime.toISOString(),
 			exe_end_date: endTime.toISOString(),
-			automation_content: this.buildAutomationContent(test, result),
+			automation_content: stripAnsi(this.buildAutomationContent(test, result)),
 		};
 
 		if (result.status === "failed" || result.status === "timedOut") {
 			const firstError = result.errors[0];
 			if (firstError?.message !== undefined) {
-				testLog.note = firstError.message;
+				testLog.note = stripAnsi(firstError.message);
 			}
 		}
 
@@ -94,9 +99,15 @@ export default class QTestReporter implements Reporter {
 				console.log(`qTest job #${id} completed: ${final.state}`);
 			}
 		} catch (error) {
-			console.log(
-				`qTest reporter: ${(error as Error).message ?? "unknown error"}`,
-			);
+			if (error instanceof ApiError) {
+				console.log(
+					`qTest reporter: ${error.message} — ${JSON.stringify(error.responseBody)}`,
+				);
+			} else {
+				console.log(
+					`qTest reporter: ${(error as Error).message ?? "unknown error"}`,
+				);
+			}
 		}
 	}
 

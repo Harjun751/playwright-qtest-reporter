@@ -76,15 +76,15 @@ describe("QTestReporter", () => {
 			);
 		});
 
-		it("uses the titlePath as the test name", () => {
+		it("uses the titlePath as the test name, skipping empty segments", () => {
 			const reporter = new QTestReporter();
 			reporter.onTestEnd(
-				fakeTestCase("inner", ["root", "middle", "inner"]),
+				fakeTestCase("inner", ["", "root", "inner"]),
 				fakeTestResult("passed", 100),
 			);
 			const logs = (reporter as unknown as { testLogs: unknown[] }).testLogs;
 			expect(logs[0]).toEqual(
-				expect.objectContaining({ name: "root › middle › inner" }),
+				expect.objectContaining({ name: "root › inner" }),
 			);
 		});
 
@@ -114,6 +114,34 @@ describe("QTestReporter", () => {
 			);
 			const logs = (reporter as unknown as { testLogs: unknown[] }).testLogs;
 			expect(logs[0]).toEqual(expect.objectContaining({ note: "boom" }));
+		});
+
+		it("strips ANSI codes from automation_content on failure", () => {
+			const reporter = new QTestReporter();
+			reporter.onTestEnd(
+				fakeTestCase("colorful failure"),
+				fakeTestResult("failed", 100, [
+					fakeTestError("\x1b[31mred error\x1b[39m"),
+				]),
+			);
+			const logs = (reporter as unknown as { testLogs: unknown[] }).testLogs;
+			expect(logs[0]).toEqual(
+				expect.objectContaining({ automation_content: "red error" }),
+			);
+		});
+
+		it("strips ANSI codes from note on failure", () => {
+			const reporter = new QTestReporter();
+			reporter.onTestEnd(
+				fakeTestCase("colorful note"),
+				fakeTestResult("failed", 100, [
+					fakeTestError("\x1b[2mbold\x1b[22m message"),
+				]),
+			);
+			const logs = (reporter as unknown as { testLogs: unknown[] }).testLogs;
+			expect(logs[0]).toEqual(
+				expect.objectContaining({ note: "bold message" }),
+			);
 		});
 
 		it("uses test title as automation_content when a failure has no errors", () => {
@@ -287,6 +315,28 @@ describe("QTestReporter", () => {
 
 			expect(logSpy).toHaveBeenCalledWith(
 				expect.stringContaining("qTest reporter"),
+			);
+		});
+
+		it("includes the API response body for HTTP errors", async () => {
+			vi.stubEnv("QTEST_BASE_URL", "https://qtest.example.com");
+			vi.stubEnv("QTEST_API_TOKEN", "secret-token");
+			vi.stubEnv("QTEST_PROJECT_ID", "42");
+			const fetchMock = vi
+				.fn<typeof fetch>()
+				.mockResolvedValue(
+					jsonResponse(400, { message: "Test case not found" }),
+				);
+			vi.stubGlobal("fetch", fetchMock);
+
+			const reporter = new QTestReporter();
+			reporter.onTestEnd(fakeTestCase("a test"), fakeTestResult("passed", 100));
+
+			const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+			await reporter.onEnd();
+
+			expect(logSpy).toHaveBeenCalledWith(
+				expect.stringContaining('{"message":"Test case not found"}'),
 			);
 		});
 	});
