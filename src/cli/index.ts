@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { Command, CommanderError } from "commander";
-import { QTestError } from "../utils/errors.js";
+import { ApiError, QTestError } from "../utils/errors.js";
 import { createLogger } from "../utils/logger.js";
 import { registerConfigCommand } from "./commands/config.js";
 import { registerSyncCommand } from "./commands/sync.js";
@@ -33,7 +33,14 @@ export async function runCli(argv?: string[]): Promise<number> {
 		if (error instanceof CommanderError) {
 			return error.exitCode;
 		}
-		if (error instanceof QTestError) {
+		if (error instanceof ApiError) {
+			const detail =
+				error.responseBody !== undefined
+					? ` — ${JSON.stringify(error.responseBody)}`
+					: "";
+			logger.error(error.message + detail);
+			console.error(error.message + detail);
+		} else if (error instanceof QTestError) {
 			logger.error(error.message);
 			console.error(error.message);
 		} else if (error instanceof Error) {

@@ -206,8 +206,9 @@ function listPlaywrightTests(): SpecWithAnnotations[] {
 
 	// stdout may contain preamble from dotenv or other tools
 	const output = spawnResult.stdout;
-	const braceIndex = output.indexOf("{");
-	const jsonText = braceIndex > 0 ? output.slice(braceIndex) : output;
+	const lines = output.split("\n");
+	const jsonStart = lines.findIndex((line) => line.trimStart().startsWith("{"));
+	const jsonText = jsonStart >= 0 ? lines.slice(jsonStart).join("\n") : output;
 
 	let json: unknown;
 	try {
@@ -269,8 +270,9 @@ async function fetchAllTestCases(
 	while (true) {
 		const options: ListTestCasesOptions = { parentId, page, size };
 		const pageResult = await listTestCases(client, projectId, options);
-		all.push(...pageResult.items);
-		if (pageResult.items.length < size) {
+		const items = Array.isArray(pageResult) ? pageResult : pageResult.items;
+		all.push(...items);
+		if (Array.isArray(pageResult) || items.length < size) {
 			break;
 		}
 		page++;
