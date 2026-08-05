@@ -2,6 +2,7 @@ import { createRequire } from "node:module";
 import { Command, CommanderError } from "commander";
 import { QTestError } from "../utils/errors.js";
 import { registerConfigCommand } from "./commands/config.js";
+import { registerSyncCommand } from "./commands/sync.js";
 import { registerUploadCommand } from "./commands/upload.js";
 
 const require = createRequire(import.meta.url);
@@ -14,6 +15,7 @@ export function buildProgram(): Command {
 		.description("Upload Playwright test results to qTest")
 		.version(version);
 	registerConfigCommand(program);
+	registerSyncCommand(program);
 	registerUploadCommand(program);
 	return program;
 }

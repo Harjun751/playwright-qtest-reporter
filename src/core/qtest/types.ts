@@ -32,6 +32,7 @@ export interface TestLog {
 	exe_end_date: string;
 	automation_content: string;
 	note?: string;
+	test_case?: string;
 	attachments?: Attachment[];
 	test_step_logs?: TestStepLog[];
 	testcase_properties?: PropertyResource[];
@@ -76,4 +77,12 @@ export interface PagedResource<T> {
 export interface QueueProcessingResponse {
 	id: number;
 	state: QueueJobState;
+}
+
+export interface Module {
+	id: number;
+	name: string;
+	pid?: string;
+	parent_id?: number;
+	order?: number;
 }

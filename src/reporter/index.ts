@@ -47,6 +47,11 @@ export default class QTestReporter implements Reporter {
 			automation_content: stripAnsi(this.buildAutomationContent(test, result)),
 		};
 
+		const qtestAnnotation = test.annotations.find((a) => a.type === "qtest");
+		if (qtestAnnotation?.description !== undefined) {
+			testLog.test_case = qtestAnnotation.description;
+		}
+
 		if (result.status === "failed" || result.status === "timedOut") {
 			const firstError = result.errors[0];
 			if (firstError?.message !== undefined) {

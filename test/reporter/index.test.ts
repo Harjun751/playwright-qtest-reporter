@@ -197,6 +197,24 @@ describe("QTestReporter", () => {
 				}),
 			);
 		});
+
+		it("sets test_case from qtest annotation", () => {
+			const reporter = new QTestReporter();
+			const testCase = fakeTestCase("annotated test");
+			testCase.annotations = [{ type: "qtest", description: "TC-42" }];
+			reporter.onTestEnd(testCase, fakeTestResult("passed", 100));
+			const logs = (reporter as unknown as { testLogs: unknown[] }).testLogs;
+			expect(logs[0]).toEqual(expect.objectContaining({ test_case: "TC-42" }));
+		});
+
+		it("omits test_case when qtest annotation is missing", () => {
+			const reporter = new QTestReporter();
+			const testCase = fakeTestCase("no annotation");
+			testCase.annotations = [{ type: "other", description: "ignored" }];
+			reporter.onTestEnd(testCase, fakeTestResult("passed", 100));
+			const logs = (reporter as unknown as { testLogs: unknown[] }).testLogs;
+			expect(logs[0]).not.toHaveProperty("test_case");
+		});
 	});
 
 	describe("onEnd", () => {
