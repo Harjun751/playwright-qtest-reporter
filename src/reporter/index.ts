@@ -52,7 +52,7 @@ export default class QTestReporter implements Reporter {
 
 		const qtestAnnotation = test.annotations.find((a) => a.type === "qtest");
 		if (qtestAnnotation?.description !== undefined) {
-			testLog.test_case = qtestAnnotation.description;
+			testLog.test_case_version_id = Number(qtestAnnotation.description);
 		}
 
 		if (result.status === "failed" || result.status === "timedOut") {

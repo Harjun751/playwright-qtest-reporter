@@ -27,7 +27,7 @@ interface SpecEntry {
 interface TestEntry {
 	file: string;
 	name: string;
-	pid?: string;
+	versionId?: number;
 	status: "existing" | "new";
 }
 
@@ -91,7 +91,7 @@ function classifySpecs(specs: SpecWithAnnotations[]): { entries: TestEntry[] } {
 		const qtestAnn = spec.annotations.find((a) => a.type === "qtest");
 		if (qtestAnn?.description !== undefined) {
 			entry.status = "existing";
-			entry.pid = qtestAnn.description;
+			entry.versionId = Number(qtestAnn.description);
 		}
 		entries.push(entry);
 	}
@@ -123,27 +123,31 @@ async function syncUnlinked(
 		const match = existingByName.get(entry.name);
 		if (match !== undefined) {
 			entry.status = "existing";
-			const pid = extractPid(match);
-			if (pid !== undefined) {
-				entry.pid = pid;
+			const versionId = extractVersionId(match);
+			if (versionId !== undefined) {
+				entry.versionId = versionId;
 			}
-			logger.debug(`matched "${entry.name}" to ${entry.pid ?? "unknown"}`);
+			logger.debug(
+				`matched "${entry.name}" to ${entry.versionId ?? "unknown"}`,
+			);
 		} else if (!options.dryRun) {
 			const created = await createTestCase(client, projectId, {
 				name: entry.name,
 				parent_id: options.parentModule,
 			});
-			const pid = extractPid(created);
-			if (pid !== undefined) {
-				entry.pid = pid;
+			const versionId = extractVersionId(created);
+			if (versionId !== undefined) {
+				entry.versionId = versionId;
 			}
-			logger.debug(`created "${entry.name}" → ${pid ?? "unknown"}`);
+			logger.debug(`created "${entry.name}" → ${versionId ?? "unknown"}`);
 		}
 	}
 }
 
-function extractPid(tc: { pid?: string; id?: number }): string | undefined {
-	return tc.pid ?? (tc.id !== undefined ? String(tc.id) : undefined);
+function extractVersionId(tc: {
+	test_case_version_id?: number;
+}): number | undefined {
+	return tc.test_case_version_id;
 }
 
 // ── Playwright test discovery ────────────────────────────────────────────────
@@ -252,7 +256,7 @@ function listPlaywrightTests(): SpecWithAnnotations[] {
 function printTable(entries: TestEntry[]): void {
 	for (const entry of entries) {
 		console.log(
-			`${entry.file}: ${entry.name} → ${entry.pid ?? "-"} (${entry.status})`,
+			`${entry.file}: ${entry.name} → ${entry.versionId ?? "-"} (${entry.status})`,
 		);
 	}
 }

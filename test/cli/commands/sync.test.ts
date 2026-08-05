@@ -137,14 +137,18 @@ describe("sync", () => {
 			.fn<typeof fetch>()
 			.mockResolvedValueOnce(
 				jsonResponse(200, {
-					items: [{ id: 10, pid: "TC-10", name: "has title" }],
+					items: [{ id: 10, test_case_version_id: 10, name: "has title" }],
 					total: 1,
 					page: 1,
 					pageSize: 100,
 				}),
 			)
 			.mockResolvedValueOnce(
-				jsonResponse(200, { id: 11, pid: "TC-11", name: "login fails" }),
+				jsonResponse(200, {
+					id: 11,
+					test_case_version_id: 11,
+					name: "login fails",
+				}),
 			);
 		vi.stubGlobal("fetch", fetchMock);
 		const log = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -154,11 +158,9 @@ describe("sync", () => {
 		expect(code).toBe(0);
 		expect(fetchMock).toHaveBeenCalledTimes(2);
 		expect(log).toHaveBeenCalledWith(
-			"login.spec.ts: has title → TC-10 (existing)",
+			"login.spec.ts: has title → 10 (existing)",
 		);
-		expect(log).toHaveBeenCalledWith(
-			"login.spec.ts: login fails → TC-11 (new)",
-		);
+		expect(log).toHaveBeenCalledWith("login.spec.ts: login fails → 11 (new)");
 		expect(log).toHaveBeenCalledWith(
 			"Test Design synchronized: 1 linked, 1 created.",
 		);
@@ -174,12 +176,12 @@ describe("sync", () => {
 					{
 						file: "login.spec.ts",
 						title: "has title",
-						annotations: [{ type: "qtest", description: "TC-42" }],
+						annotations: [{ type: "qtest", description: "42" }],
 					},
 					{
 						file: "login.spec.ts",
 						title: "login fails",
-						annotations: [{ type: "qtest", description: "TC-99" }],
+						annotations: [{ type: "qtest", description: "99" }],
 					},
 				]),
 			),
@@ -193,10 +195,10 @@ describe("sync", () => {
 		expect(code).toBe(0);
 		expect(fetchMock).not.toHaveBeenCalled();
 		expect(log).toHaveBeenCalledWith(
-			"login.spec.ts: has title → TC-42 (existing)",
+			"login.spec.ts: has title → 42 (existing)",
 		);
 		expect(log).toHaveBeenCalledWith(
-			"login.spec.ts: login fails → TC-99 (existing)",
+			"login.spec.ts: login fails → 99 (existing)",
 		);
 		expect(log).toHaveBeenCalledWith(
 			"Test Design synchronized: 2 linked, 0 created.",

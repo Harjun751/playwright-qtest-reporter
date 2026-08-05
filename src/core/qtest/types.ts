@@ -32,7 +32,7 @@ export interface TestLog {
 	exe_end_date: string;
 	automation_content: string;
 	note?: string;
-	test_case?: string;
+	test_case_version_id?: number;
 	attachments?: Attachment[];
 	test_step_logs?: TestStepLog[];
 	testcase_properties?: PropertyResource[];

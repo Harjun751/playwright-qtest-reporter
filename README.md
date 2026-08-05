@@ -63,6 +63,51 @@ reporter: [
 | `testSuiteId`    | —       | qTest test suite ID to attach results to           |
 | `parentModuleId` | —       | qTest parent module ID to attach results to        |
 
+### Linking results to Test Design
+
+By default each test run creates ad-hoc logs with no link to your authored test cases. To get traceability and coverage reporting, wire Playwright tests to Test Design cases in two steps.
+
+**1. Sync tests to Test Design**
+
+Run `sync` to create a test case in qTest for each Playwright test. It uses Playwright's test discovery, deduplicates across browsers, and skips already-linked tests.
+
+```sh
+qtest-playwright sync --parent-module 562
+```
+
+Output:
+
+```
+login.spec.ts: has title → 1 (new)
+login.spec.ts: login fails → 2 (new)
+Test Design synchronized: 0 linked, 2 created.
+```
+
+**2. Add qTest annotations**
+
+Paste each version ID into the corresponding test as a Playwright annotation:
+
+```ts
+import { test, expect } from "@playwright/test";
+
+test("has title", {
+	annotation: { type: "qtest", description: "1" },
+}, async ({ page }) => {
+	await page.goto("/auth/login");
+	await expect(page).toHaveTitle(/login/i);
+});
+
+test("login fails", {
+	annotation: { type: "qtest", description: "2" },
+}, async ({ page }) => {
+	await page.goto("/auth/login");
+	await page.getByRole("button", { name: "Sign in" }).click();
+	await expect(page.getByText("Invalid credentials")).toBeVisible();
+});
+```
+
+From now on, every test run links its results back to the correct Test Design case via `test_case_version_id`. No scripts, no mapping files — one annotation per test.
+
 ## CLI
 
 Validate your configuration:
