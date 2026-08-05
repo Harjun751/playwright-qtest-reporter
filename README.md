@@ -29,6 +29,7 @@ Both the CLI and the reporter read configuration from environment variables:
 | `QTEST_PROJECT_ID`    | yes      | —                           | qTest project ID to upload to                |
 | `QTEST_LOG_LEVEL`     | no       | `info`                      | Logger verbosity (`trace`/`debug`/`info`/`warn`/`error`/`silent`) |
 | `QTEST_RUN_ID`        | no       | —                           | qTest run ID (reserved for future use)       |
+| `QTEST_DEBUG`         | no       | —                           | Set to any value to enable debug logging     |
 
 The API token is managed in qTest under **Profile → Personal Access Token**. The project ID is visible in the URL when you open a project (`https://<instance>.tricentis.com/qtest/projects/<id>/...`).
 

@@ -5,6 +5,9 @@ import { QTestClient } from "../../core/qtest/client.js";
 import { submitTestLogs, waitForJob } from "../../core/qtest/endpoints/runs.js";
 import { mapReport } from "../../mapper/index.js";
 import { parseJUnit } from "../../parser/junit.js";
+import { createLogger } from "../../utils/logger.js";
+
+const logger = createLogger("cli/upload");
 
 interface UploadCommandOptions {
 	testSuite?: number;
@@ -41,6 +44,7 @@ async function executeUpload(
 
 	let xml: string;
 	try {
+		logger.debug(`reading report: ${file}`);
 		xml = readFileSync(file, "utf-8");
 	} catch (error) {
 		throw new Error(

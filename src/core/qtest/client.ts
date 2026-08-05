@@ -48,6 +48,8 @@ export class QTestClient {
 			init.body = body;
 		}
 
+		this.logger.debug(`>> ${method} ${url}${body ? " (body)" : ""}`);
+
 		let lastError: unknown;
 		for (let attempt = 0; attempt < this.maxRetries; attempt++) {
 			const isLastAttempt = attempt === this.maxRetries - 1;
@@ -63,6 +65,7 @@ export class QTestClient {
 						`qTest API rejected the bearer token (401 for ${url})`,
 					);
 				}
+				this.logger.debug(`<< ${response.status}`, parsed);
 				const apiError = new ApiError(
 					`qTest API request failed (${response.status}) for ${url}`,
 					response.status,

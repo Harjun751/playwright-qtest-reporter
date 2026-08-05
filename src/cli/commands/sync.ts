@@ -10,6 +10,9 @@ import {
 	listTestCases,
 } from "../../core/qtest/endpoints/cases.js";
 import type { TestCase } from "../../core/qtest/types.js";
+import { createLogger } from "../../utils/logger.js";
+
+const logger = createLogger("cli/sync");
 
 interface SyncCommandOptions {
 	parentModule: number;
@@ -50,9 +53,13 @@ async function executeSync(options: SyncCommandOptions): Promise<void> {
 		console.log("No tests found. Run npx playwright test --list to verify.");
 		return;
 	}
+	logger.debug(`discovered ${specs.length} unique spec(s)`);
 
 	const { entries } = classifySpecs(specs);
 	const unlinked = entries.filter((e) => e.status === "new");
+	logger.debug(
+		`classified: ${entries.length - unlinked.length} linked, ${unlinked.length} unlinked`,
+	);
 
 	if (unlinked.length > 0) {
 		const client = new QTestClient({
@@ -103,6 +110,9 @@ async function syncUnlinked(
 		projectId,
 		options.parentModule,
 	);
+	logger.debug(
+		`existing test cases under module ${options.parentModule}: ${existing.length}`,
+	);
 
 	const existingByName = new Map<string, TestCase>();
 	for (const tc of existing) {
@@ -117,6 +127,7 @@ async function syncUnlinked(
 			if (pid !== undefined) {
 				entry.pid = pid;
 			}
+			logger.debug(`matched "${entry.name}" to ${entry.pid ?? "unknown"}`);
 		} else if (!options.dryRun) {
 			const created = await createTestCase(client, projectId, {
 				name: entry.name,
@@ -126,6 +137,7 @@ async function syncUnlinked(
 			if (pid !== undefined) {
 				entry.pid = pid;
 			}
+			logger.debug(`created "${entry.name}" → ${pid ?? "unknown"}`);
 		}
 	}
 }
@@ -178,6 +190,7 @@ function listPlaywrightTests(): SpecWithAnnotations[] {
 	const playwrightCli = require.resolve("@playwright/test/cli", {
 		paths: [cwd],
 	});
+	logger.debug(`playwright CLI: ${playwrightCli}, cwd: ${cwd}`);
 
 	const spawnResult = spawnSync(
 		process.execPath,

@@ -1,5 +1,9 @@
 import log from "loglevel";
 
+if (process.env.QTEST_DEBUG) {
+	log.setLevel("debug");
+}
+
 export function createLogger(module: string) {
 	const logger = log.getLogger(module);
 

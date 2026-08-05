@@ -1,12 +1,20 @@
 import { QTestError } from "../../../utils/errors.js";
+import { createLogger } from "../../../utils/logger.js";
 import type { QTestClient } from "../client.js";
 import type { AutomationRequest, QueueProcessingResponse } from "../types.js";
+
+const logger = createLogger("qtest/runs");
 
 export async function submitTestLogs(
 	client: QTestClient,
 	projectId: number,
 	body: AutomationRequest,
 ): Promise<QueueProcessingResponse> {
+	logger.debug(
+		"submitting test logs",
+		`project=${projectId}`,
+		`testCount=${body.test_logs.length}`,
+	);
 	return client.post<QueueProcessingResponse>(
 		`projects/${projectId}/test-runs/0/auto-test-logs`,
 		{ body, query: { type: "automation" }, version: "v3.1" },
@@ -38,6 +46,7 @@ export async function waitForJob(
 
 	for (;;) {
 		const status = await getJobStatus(client, jobId);
+		logger.debug(`job #${jobId} state: ${status.state}`);
 		if (status.state === "SUCCESS") {
 			return status;
 		}

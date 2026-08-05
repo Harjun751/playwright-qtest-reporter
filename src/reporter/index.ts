@@ -5,6 +5,9 @@ import { QTestClient } from "../core/qtest/client.js";
 import { submitTestLogs, waitForJob } from "../core/qtest/endpoints/runs.js";
 import type { AutomationRequest, TestLog } from "../core/qtest/types.js";
 import { ApiError } from "../utils/errors.js";
+import { createLogger } from "../utils/logger.js";
+
+const logger = createLogger("reporter");
 
 export interface QTestReporterOptions {
 	wait?: boolean;
@@ -72,6 +75,12 @@ export default class QTestReporter implements Reporter {
 		const skipped = this.testLogs.filter((l) => l.status === "SKIP").length;
 		console.log(
 			`qTest reporter: submitting ${this.testLogs.length} tests (${passed} passed, ${failed} failed, ${skipped} skipped)`,
+		);
+		logger.debug(
+			`submitting ${this.testLogs.length} test logs`,
+			`pass=${passed}`,
+			`fail=${failed}`,
+			`skip=${skipped}`,
 		);
 
 		try {
