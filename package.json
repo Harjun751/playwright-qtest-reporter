@@ -6,7 +6,12 @@
 	"main": "index.js",
 	"scripts": {
 		"test": "vitest run",
-		"check": "biome check --write"
+		"check": "biome check --write",
+		"typecheck": "tsc --noEmit",
+		"build": "tsc -p tsconfig.build.json"
+	},
+	"bin": {
+		"qtest-playwright": "./dist/cli/main.js"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.7",
@@ -15,6 +20,7 @@
 		"vitest": "^4.1.10"
 	},
 	"dependencies": {
+		"commander": "^15.0.0",
 		"loglevel": "^1.9.2",
 		"zod": "^4.4.3"
 	}
