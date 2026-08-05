@@ -37,6 +37,11 @@
 		"isolatedModules": true,
 		"noUncheckedSideEffectImports": true,
 		"moduleDetection": "force",
-		"skipLibCheck": true
+		"skipLibCheck": true,
+
+		// Path aliases
+		"paths": {
+			"@src/*": ["./src/*"]
+		}
 	}
 }

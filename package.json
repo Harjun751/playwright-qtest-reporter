@@ -5,13 +5,14 @@
 	"type": "module",
 	"main": "index.js",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1",
+		"test": "vitest run",
 		"check": "biome check --write"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.7",
 		"@types/node": "^26.1.2",
-		"typescript": "^7.0.2"
+		"typescript": "^7.0.2",
+		"vitest": "^4.1.10"
 	},
 	"dependencies": {
 		"loglevel": "^1.9.2",
