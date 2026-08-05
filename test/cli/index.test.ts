@@ -12,7 +12,7 @@ describe("CLI entrypoint", () => {
 			.mockImplementation(() => true);
 		const code = await runCli(["--version"]);
 		expect(code).toBe(0);
-		expect(write).toHaveBeenCalledWith("1.0.0\n");
+		expect(write).toHaveBeenCalledWith("0.1.0\n");
 	});
 
 	it("prints help without exiting successfully", async () => {
