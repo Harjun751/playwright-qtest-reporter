@@ -282,10 +282,10 @@ describe("QTestReporter", () => {
 			const reporter = new QTestReporter();
 			reporter.onTestEnd(fakeTestCase("a test"), fakeTestResult("passed", 100));
 
-			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+			const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 			await reporter.onEnd();
 
-			expect(errorSpy).toHaveBeenCalledWith(
+			expect(logSpy).toHaveBeenCalledWith(
 				expect.stringContaining("qTest reporter"),
 			);
 		});

@@ -57,6 +57,13 @@ export default class QTestReporter implements Reporter {
 			return;
 		}
 
+		const passed = this.testLogs.filter((l) => l.status === "PASS").length;
+		const failed = this.testLogs.filter((l) => l.status === "FAIL").length;
+		const skipped = this.testLogs.filter((l) => l.status === "SKIP").length;
+		console.log(
+			`qTest reporter: submitting ${this.testLogs.length} tests (${passed} passed, ${failed} failed, ${skipped} skipped)`,
+		);
+
 		try {
 			const config = loadConfig();
 			const request: AutomationRequest = {
@@ -87,7 +94,7 @@ export default class QTestReporter implements Reporter {
 				console.log(`qTest job #${id} completed: ${final.state}`);
 			}
 		} catch (error) {
-			console.error(
+			console.log(
 				`qTest reporter: ${(error as Error).message ?? "unknown error"}`,
 			);
 		}
