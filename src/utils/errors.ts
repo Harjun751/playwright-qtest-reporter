@@ -34,10 +34,3 @@ export class ConfigError extends QTestError {
 		this.name = "ConfigError";
 	}
 }
-
-export class ParseError extends QTestError {
-	constructor(message: string, options?: ErrorOptions) {
-		super("PARSE_ERROR", message, options);
-		this.name = "ParseError";
-	}
-}

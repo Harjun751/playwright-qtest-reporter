@@ -49,42 +49,7 @@ export interface AutomationRequest {
 	test_logs: TestLog[];
 }
 
-export interface TestStep {
-	description: string;
-	expected: string;
-	order?: number;
-}
-
-export interface TestCase {
-	name: string;
-	parent_id?: number;
-	order?: number;
-	description?: string;
-	precondition?: string;
-	properties?: PropertyResource[];
-	test_steps?: TestStep[];
-	id?: number;
-	pid?: string;
-	web_url?: string;
-	test_case_version_id?: number;
-}
-
-export interface PagedResource<T> {
-	items: T[];
-	total: number;
-	page: number;
-	pageSize: number;
-}
-
 export interface QueueProcessingResponse {
 	id: number;
 	state: QueueJobState;
-}
-
-export interface Module {
-	id: number;
-	name: string;
-	pid?: string;
-	parent_id?: number;
-	order?: number;
 }

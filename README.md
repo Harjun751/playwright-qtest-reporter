@@ -1,9 +1,6 @@
 # qtest-playwright-integration
 
-Upload Playwright test results to [qTest](https://www.tricentis.com/products/tricentis-qtest) as automated test logs. Two approaches are supported:
-
-- **Playwright Reporter** — add a reporter to `playwright.config.ts` and results upload automatically after each test run.
-- **CLI** — generate a JUnit XML file from Playwright and upload it with the `qtest-playwright` command.
+Upload Playwright test results to [qTest](https://www.tricentis.com/products/tricentis-qtest) as automated test logs. Add the Playwright reporter to `playwright.config.ts` and results upload automatically after each test run.
 
 ## Requirements
 
@@ -20,7 +17,7 @@ npm link
 
 ## Configuration
 
-Both the CLI and the reporter read configuration from environment variables:
+The reporter reads configuration from environment variables:
 
 | Variable              | Required | Default                     | Description                                  |
 | --------------------- | -------- | --------------------------- | -------------------------------------------- |
@@ -63,6 +60,7 @@ reporter: [
 | `wait`           | `false` | Wait for the qTest job to complete before exiting  |
 | `testSuiteId`    | —       | qTest test suite ID to attach results to           |
 | `parentModuleId` | —       | qTest parent module ID to attach results to        |
+| `skipAutomationModule` | `false` | Skip creating the 'Automation' sub-module under the parent module |
 
 ### Linking test logs to qTest test cases
 
@@ -78,66 +76,11 @@ test("creates a customer", async ({ page }) => {
 });
 ```
 
-The annotation value is sent as `automation_content`, so qTest links the result to any existing Test Case with that Automation Content, or creates one on the first run. Failed tests also include a single test step whose `actual_result` holds the failure detail.
+The annotation value is sent as `automation_content`, so qTest links the result to any existing Test Case with that Automation Content, or creates one on the first run. The test log `name` is the test's leaf title, and the browser/project name (e.g. `chromium`) is stored in the test log `note`. Failed tests also include a single test step whose `actual_result` holds the failure detail.
 
 ### Attachments
 
-Screenshots, videos, and traces captured during a test are uploaded as base64 inline attachments on the matching test log. What gets captured is controlled by your Playwright config (`screenshot`, `video`, `trace` options and any `page.screenshot()`/`test.info().attach()` calls) — the reporter passes through whatever Playwright records. Control the allowed size with `QTEST_MAX_ATTACHMENT_SIZE`; oversized or unreadable files are skipped with a warning instead of failing the run. Note that the JUnit-based CLI path does not support attachments, since the JUnit format carries no file data.
-
-## CLI
-
-Validate your configuration:
-
-```sh
-qtest-playwright config validate
-```
-
-Upload a JUnit XML report:
-
-```sh
-qtest-playwright upload results.xml
-```
-
-Upload without waiting for the submission job:
-
-```sh
-qtest-playwright upload results.xml --no-wait
-```
-
-Attach results to a specific test suite or parent module:
-
-```sh
-qtest-playwright upload results.xml --test-suite 5 --parent-module 8
-```
-
-### Options for `upload`
-
-| Option                | Description                                        |
-| --------------------- | -------------------------------------------------- |
-| `<file>`              | Path to the JUnit XML report (required)            |
-| `--test-suite <id>`   | qTest test suite ID to attach results to           |
-| `--parent-module <id>` | qTest parent module ID to attach results to       |
-| `--no-wait`           | Exit after submitting without polling for completion |
-
-## Generating a JUnit report for the CLI
-
-Configure Playwright to emit a JUnit report, then upload it:
-
-```js
-// playwright.config.ts
-import { defineConfig } from "@playwright/test";
-
-export default defineConfig({
-	reporter: [["junit", { outputFile: "results.xml" }]],
-});
-```
-
-```sh
-npx playwright test
-qtest-playwright upload results.xml
-```
-
-> With the Playwright Reporter approach you don't need this step — results are uploaded directly.
+Screenshots, videos, and traces captured during a test are uploaded as base64 inline attachments on the matching test log. What gets captured is controlled by your Playwright config (`screenshot`, `video`, `trace` options and any `page.screenshot()`/`test.info().attach()` calls) — the reporter passes through whatever Playwright records. Control the allowed size with `QTEST_MAX_ATTACHMENT_SIZE`; oversized or unreadable files are skipped with a warning instead of failing the run.
 
 ## Development
 
@@ -146,5 +89,5 @@ npm install
 npm run check   # biome format + lint
 npm run typecheck
 npm test
-npm run build   # emits ./dist for the CLI binary
+npm run build   # emits ./dist for the reporter
 ```
