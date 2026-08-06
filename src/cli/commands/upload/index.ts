@@ -1,11 +1,15 @@
 import { readFileSync } from "node:fs";
-import { type Command, InvalidArgumentError } from "commander";
-import { loadConfig } from "../../config/loader.js";
-import { QTestClient } from "../../core/qtest/client.js";
-import { submitTestLogs, waitForJob } from "../../core/qtest/endpoints/runs.js";
-import { mapReport } from "../../mapper/index.js";
-import { parseJUnit } from "../../parser/junit.js";
-import { createLogger } from "../../utils/logger.js";
+import type { Command } from "commander";
+import { loadConfig } from "../../../config/loader.js";
+import { QTestClient } from "../../../core/qtest/client.js";
+import {
+	submitTestLogs,
+	waitForJob,
+} from "../../../core/qtest/endpoints/runs.js";
+import { mapReport } from "../../../mapper/index.js";
+import { parseJUnit } from "../../../parser/junit.js";
+import { createLogger } from "../../../utils/logger.js";
+import { integerOption } from "../../helpers.js";
 
 const logger = createLogger("cli/upload");
 
@@ -82,12 +86,4 @@ async function executeUpload(
 	console.log(`Waiting for job #${id}...`);
 	const result = await waitForJob(client, id);
 	console.log(`Job #${id} completed: ${result.state}.`);
-}
-
-function integerOption(value: string): number {
-	const parsed = Number(value);
-	if (!Number.isInteger(parsed)) {
-		throw new InvalidArgumentError(`expected an integer, got "${value}"`);
-	}
-	return parsed;
 }

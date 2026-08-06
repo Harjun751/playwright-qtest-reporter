@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { loadConfig } from "../../config/loader.js";
+import { loadConfig } from "../../../config/loader.js";
 
 export function registerConfigCommand(program: Command): void {
 	const validate = program

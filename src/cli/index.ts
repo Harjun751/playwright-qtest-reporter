@@ -2,9 +2,9 @@ import { createRequire } from "node:module";
 import { Command, CommanderError } from "commander";
 import { ApiError, QTestError } from "../utils/errors.js";
 import { createLogger } from "../utils/logger.js";
-import { registerConfigCommand } from "./commands/config.js";
-import { registerSyncCommand } from "./commands/sync.js";
-import { registerUploadCommand } from "./commands/upload.js";
+import { registerConfigCommand } from "./commands/config/index.js";
+import { registerSyncCommand } from "./commands/sync/index.js";
+import { registerUploadCommand } from "./commands/upload/index.js";
 
 const logger = createLogger("cli");
 

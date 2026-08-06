@@ -2,8 +2,13 @@ import type { Reporter, TestCase, TestResult } from "@playwright/test/reporter";
 import stripAnsi from "strip-ansi";
 import { loadConfig } from "../config/loader.js";
 import { QTestClient } from "../core/qtest/client.js";
+import {
+	QTEST_ANNOTATION_TYPE,
+	QTEST_STATUS_BY_RESULT,
+} from "../core/qtest/constants.js";
 import { submitTestLogs, waitForJob } from "../core/qtest/endpoints/runs.js";
 import type { AutomationRequest, TestLog } from "../core/qtest/types.js";
+import { toDateString } from "../utils/date.js";
 import { ApiError } from "../utils/errors.js";
 import { createLogger } from "../utils/logger.js";
 
@@ -14,14 +19,6 @@ export interface QTestReporterOptions {
 	testSuiteId?: number;
 	parentModuleId?: number;
 }
-
-const QTEST_STATUS_MAP: Record<string, string> = {
-	passed: "PASS",
-	failed: "FAIL",
-	timedOut: "FAIL",
-	skipped: "SKIP",
-	interrupted: "FAIL",
-};
 
 export default class QTestReporter implements Reporter {
 	private readonly testLogs: TestLog[] = [];
@@ -44,13 +41,15 @@ export default class QTestReporter implements Reporter {
 				.titlePath()
 				.filter((p) => p !== "")
 				.join(" › "),
-			status: QTEST_STATUS_MAP[result.status] ?? "FAIL",
+			status: QTEST_STATUS_BY_RESULT[result.status] ?? "FAIL",
 			exe_start_date: startTime.toISOString(),
 			exe_end_date: endTime.toISOString(),
 			automation_content: stripAnsi(this.buildAutomationContent(test, result)),
 		};
 
-		const qtestAnnotation = test.annotations.find((a) => a.type === "qtest");
+		const qtestAnnotation = test.annotations.find(
+			(a) => a.type === QTEST_ANNOTATION_TYPE,
+		);
 		if (qtestAnnotation?.description !== undefined) {
 			testLog.test_case = qtestAnnotation.description;
 		}
@@ -134,10 +133,4 @@ export default class QTestReporter implements Reporter {
 		}
 		return test.title;
 	}
-}
-
-function toDateString(date: Date): string {
-	const month = String(date.getMonth() + 1).padStart(2, "0");
-	const day = String(date.getDate()).padStart(2, "0");
-	return `${date.getFullYear()}-${month}-${day}`;
 }

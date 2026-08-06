@@ -1,15 +1,11 @@
+import { QTEST_STATUS_BY_RESULT } from "../core/qtest/constants.js";
 import type { AutomationRequest, TestLog } from "../core/qtest/types.js";
 import type {
 	ParsedReport,
 	ParsedTestCase,
 	ParsedTestSuite,
 } from "../parser/types.js";
-
-export const QTEST_STATUS_BY_RESULT = {
-	passed: "PASS",
-	failed: "FAIL",
-	skipped: "SKIP",
-} as const;
+import { toDateString } from "../utils/date.js";
 
 export interface MapReportOptions {
 	executionDate?: string;
@@ -49,7 +45,7 @@ function toTestLog(
 	startMs: number,
 	endMs: number,
 ): TestLog {
-	const status = QTEST_STATUS_BY_RESULT[testCase.status];
+	const status = QTEST_STATUS_BY_RESULT[testCase.status] ?? "FAIL";
 	const isFailure = testCase.status === "failed";
 	const result: TestLog = {
 		name: testCase.name,
@@ -64,10 +60,4 @@ function toTestLog(
 		result.note = testCase.failureMessage;
 	}
 	return result;
-}
-
-function toDateString(date: Date): string {
-	const month = String(date.getMonth() + 1).padStart(2, "0");
-	const day = String(date.getDate()).padStart(2, "0");
-	return `${date.getFullYear()}-${month}-${day}`;
 }

@@ -1,6 +1,6 @@
 import { runCli } from "@src/cli/index.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { jsonResponse } from "../../core/qtest/test-utils.js";
+import { jsonResponse } from "../../../core/qtest/test-utils.js";
 
 function mockListOutput(
 	specs: Array<{

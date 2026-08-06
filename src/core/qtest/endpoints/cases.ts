@@ -50,6 +50,27 @@ export async function listTestCases(
 	);
 }
 
+export async function listAllTestCases(
+	client: QTestClient,
+	projectId: number,
+	parentId: number,
+): Promise<TestCase[]> {
+	const all: TestCase[] = [];
+	let page = 1;
+	const size = 100;
+	while (true) {
+		const options: ListTestCasesOptions = { parentId, page, size };
+		const pageResult = await listTestCases(client, projectId, options);
+		const items = Array.isArray(pageResult) ? pageResult : pageResult.items;
+		all.push(...items);
+		if (Array.isArray(pageResult) || items.length < size) {
+			break;
+		}
+		page++;
+	}
+	return all;
+}
+
 export async function updateTestCase(
 	client: QTestClient,
 	projectId: number,
