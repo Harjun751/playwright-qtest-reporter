@@ -17,6 +17,7 @@ interface UploadCommandOptions {
 	testSuite?: number;
 	parentModule?: number;
 	wait?: boolean;
+	skipAutomationModule?: boolean;
 }
 
 export function registerUploadCommand(program: Command): void {
@@ -35,6 +36,10 @@ export function registerUploadCommand(program: Command): void {
 			integerOption,
 		)
 		.option("--no-wait", "Exit after submitting without polling for completion")
+		.option(
+			"--skip-automation-module",
+			"Skip creating the 'Automation' sub-module under the parent module",
+		)
 		.action(async (file: string, options: UploadCommandOptions) => {
 			await executeUpload(file, options);
 		});
@@ -67,6 +72,9 @@ async function executeUpload(
 	}
 	if (options.parentModule !== undefined) {
 		request.parent_module = options.parentModule;
+	}
+	if (options.skipAutomationModule) {
+		request.skipCreatingAutomationModule = true;
 	}
 
 	const client = new QTestClient({

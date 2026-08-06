@@ -3,7 +3,6 @@ import { Command, CommanderError } from "commander";
 import { ApiError, QTestError } from "../utils/errors.js";
 import { createLogger } from "../utils/logger.js";
 import { registerConfigCommand } from "./commands/config/index.js";
-import { registerSyncCommand } from "./commands/sync/index.js";
 import { registerUploadCommand } from "./commands/upload/index.js";
 
 const logger = createLogger("cli");
@@ -18,7 +17,6 @@ export function buildProgram(): Command {
 		.description("Upload Playwright test results to qTest")
 		.version(version);
 	registerConfigCommand(program);
-	registerSyncCommand(program);
 	registerUploadCommand(program);
 	return program;
 }

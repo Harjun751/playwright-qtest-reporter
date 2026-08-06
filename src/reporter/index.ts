@@ -18,6 +18,7 @@ export interface QTestReporterOptions {
 	wait?: boolean;
 	testSuiteId?: number;
 	parentModuleId?: number;
+	skipAutomationModule?: boolean;
 }
 
 export default class QTestReporter implements Reporter {
@@ -91,6 +92,10 @@ export default class QTestReporter implements Reporter {
 			}
 			if (this.options.parentModuleId !== undefined) {
 				request.parent_module = this.options.parentModuleId;
+			}
+
+			if (this.options.skipAutomationModule) {
+				request.skipCreatingAutomationModule = true;
 			}
 
 			const client = new QTestClient({

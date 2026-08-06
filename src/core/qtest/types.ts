@@ -33,14 +33,17 @@ export interface TestLog {
 	automation_content: string;
 	attachments?: Attachment[];
 	test_step_logs?: TestStepLog[];
+	module_names?: string[];
+	properties?: PropertyResource[];
 	testcase_properties?: PropertyResource[];
 	tosca_guid?: string;
 	tosca_node_path?: string;
 }
 
 export interface AutomationRequest {
-	test_suite?: number;
-	parent_module?: number;
+	test_suite?: number | string;
+	parent_module?: number | string;
+	skipCreatingAutomationModule?: boolean;
 	execution_date: string;
 	test_logs: TestLog[];
 }

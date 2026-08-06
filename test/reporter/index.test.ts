@@ -347,6 +347,36 @@ describe("QTestReporter", () => {
 			expect(body.parent_module).toBe(8);
 		});
 
+		it("includes skipCreatingAutomationModule in the submission when the option is set", async () => {
+			vi.stubEnv("QTEST_BASE_URL", "https://qtest.example.com");
+			vi.stubEnv("QTEST_API_TOKEN", "secret-token");
+			vi.stubEnv("QTEST_PROJECT_ID", "42");
+			let submittedBody: string | null = null;
+			const fetchMock = vi
+				.fn<typeof fetch>()
+				.mockImplementation((input, init) => {
+					const url = String(input);
+					if (url.includes("auto-test-logs")) {
+						submittedBody = init?.body as string;
+						return Promise.resolve(
+							jsonResponse(201, { id: 7, state: "IN_WAITING" }),
+						);
+					}
+					throw new Error(`Unmocked URL: ${url}`);
+				});
+			vi.stubGlobal("fetch", fetchMock);
+
+			const reporter = new QTestReporter({ skipAutomationModule: true });
+			reporter.onTestEnd(fakeTestCase("a test"), fakeTestResult("passed", 100));
+
+			await reporter.onEnd();
+
+			const body = JSON.parse(submittedBody ?? "{}") as {
+				skipCreatingAutomationModule?: boolean;
+			};
+			expect(body.skipCreatingAutomationModule).toBe(true);
+		});
+
 		it("logs errors instead of throwing when the request fails", async () => {
 			vi.stubEnv("QTEST_BASE_URL", "https://qtest.example.com");
 			vi.stubEnv("QTEST_API_TOKEN", "secret-token");
