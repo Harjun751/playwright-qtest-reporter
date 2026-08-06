@@ -1,3 +1,4 @@
+import stripAnsi from "strip-ansi";
 import { QTEST_STATUS_BY_RESULT } from "../core/qtest/constants.js";
 import type { AutomationRequest, TestLog } from "../core/qtest/types.js";
 import type {
@@ -46,18 +47,25 @@ function toTestLog(
 	endMs: number,
 ): TestLog {
 	const status = QTEST_STATUS_BY_RESULT[testCase.status] ?? "FAIL";
-	const isFailure = testCase.status === "failed";
 	const result: TestLog = {
 		name: testCase.name,
 		status,
 		exe_start_date: new Date(startMs).toISOString(),
 		exe_end_date: new Date(endMs).toISOString(),
-		automation_content: isFailure
-			? (testCase.failureDetail ?? testCase.failureMessage ?? testCase.name)
-			: testCase.name,
+		automation_content: testCase.name,
 	};
-	if (isFailure && testCase.failureMessage !== undefined) {
-		result.note = testCase.failureMessage;
+	if (testCase.status === "failed") {
+		result.test_step_logs = [
+			{
+				description: "Run test",
+				expected_result: "Test passes",
+				actual_result: stripAnsi(
+					testCase.failureDetail ?? testCase.failureMessage ?? testCase.name,
+				),
+				status: "FAIL",
+				order: 1,
+			},
+		];
 	}
 	return result;
 }

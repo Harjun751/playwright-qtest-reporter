@@ -53,13 +53,16 @@ export async function listTestCases(
 export async function listAllTestCases(
 	client: QTestClient,
 	projectId: number,
-	parentId: number,
+	parentId?: number,
 ): Promise<TestCase[]> {
 	const all: TestCase[] = [];
 	let page = 1;
 	const size = 100;
 	while (true) {
-		const options: ListTestCasesOptions = { parentId, page, size };
+		const options: ListTestCasesOptions = { page, size };
+		if (parentId !== undefined) {
+			options.parentId = parentId;
+		}
 		const pageResult = await listTestCases(client, projectId, options);
 		const items = Array.isArray(pageResult) ? pageResult : pageResult.items;
 		all.push(...items);

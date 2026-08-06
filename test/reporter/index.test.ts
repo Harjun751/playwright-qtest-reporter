@@ -88,7 +88,7 @@ describe("QTestReporter", () => {
 			);
 		});
 
-		it("maps a failed test to FAIL with error details", () => {
+		it("maps a failed test to FAIL with a failing test step", () => {
 			const reporter = new QTestReporter();
 			reporter.onTestEnd(
 				fakeTestCase("login fails"),
@@ -98,12 +98,21 @@ describe("QTestReporter", () => {
 			expect(logs[0]).toEqual(
 				expect.objectContaining({
 					status: "FAIL",
-					automation_content: "expected X but got Y",
+					automation_content: "login fails",
+					test_step_logs: [
+						{
+							description: "Run test",
+							expected_result: "Test passes",
+							actual_result: "expected X but got Y",
+							status: "FAIL",
+							order: 1,
+						},
+					],
 				}),
 			);
 		});
 
-		it("sets note to the first error message for failed tests", () => {
+		it("joins all error messages into the step actual_result", () => {
 			const reporter = new QTestReporter();
 			reporter.onTestEnd(
 				fakeTestCase("error test"),
@@ -113,10 +122,12 @@ describe("QTestReporter", () => {
 				]),
 			);
 			const logs = (reporter as unknown as { testLogs: unknown[] }).testLogs;
-			expect(logs[0]).toEqual(expect.objectContaining({ note: "boom" }));
+			const steps = (logs[0] as { test_step_logs: { actual_result: string }[] })
+				.test_step_logs;
+			expect(steps[0]?.actual_result).toBe("boom\nalso failed");
 		});
 
-		it("strips ANSI codes from automation_content on failure", () => {
+		it("strips ANSI codes from the step actual_result", () => {
 			const reporter = new QTestReporter();
 			reporter.onTestEnd(
 				fakeTestCase("colorful failure"),
@@ -125,38 +136,37 @@ describe("QTestReporter", () => {
 				]),
 			);
 			const logs = (reporter as unknown as { testLogs: unknown[] }).testLogs;
-			expect(logs[0]).toEqual(
-				expect.objectContaining({ automation_content: "red error" }),
-			);
+			const steps = (logs[0] as { test_step_logs: { actual_result: string }[] })
+				.test_step_logs;
+			expect(steps[0]?.actual_result).toBe("red error");
 		});
 
-		it("strips ANSI codes from note on failure", () => {
+		it("does not add test_step_logs to passed tests", () => {
 			const reporter = new QTestReporter();
 			reporter.onTestEnd(
-				fakeTestCase("colorful note"),
-				fakeTestResult("failed", 100, [
-					fakeTestError("\x1b[2mbold\x1b[22m message"),
-				]),
+				fakeTestCase("passing"),
+				fakeTestResult("passed", 100),
 			);
 			const logs = (reporter as unknown as { testLogs: unknown[] }).testLogs;
-			expect(logs[0]).toEqual(
-				expect.objectContaining({ note: "bold message" }),
-			);
+			expect(logs[0]).not.toHaveProperty("test_step_logs");
 		});
 
-		it("uses test title as automation_content when a failure has no errors", () => {
+		it("falls back to the test title when a failure has no errors", () => {
 			const reporter = new QTestReporter();
 			reporter.onTestEnd(
 				fakeTestCase("weird failure"),
 				fakeTestResult("failed", 50),
 			);
 			const logs = (reporter as unknown as { testLogs: unknown[] }).testLogs;
+			const steps = (logs[0] as { test_step_logs: { actual_result: string }[] })
+				.test_step_logs;
 			expect(logs[0]).toEqual(
 				expect.objectContaining({
 					status: "FAIL",
 					automation_content: "weird failure",
 				}),
 			);
+			expect(steps[0]?.actual_result).toBe("weird failure");
 		});
 
 		it("maps timedOut to FAIL", () => {
@@ -198,22 +208,43 @@ describe("QTestReporter", () => {
 			);
 		});
 
-		it("sets test_case from qtest annotation", () => {
+		it("sets automation_content from the qtest annotation", () => {
 			const reporter = new QTestReporter();
 			const testCase = fakeTestCase("annotated test");
 			testCase.annotations = [{ type: "qtest", description: "TC-42" }];
 			reporter.onTestEnd(testCase, fakeTestResult("passed", 100));
 			const logs = (reporter as unknown as { testLogs: unknown[] }).testLogs;
-			expect(logs[0]).toEqual(expect.objectContaining({ test_case: "TC-42" }));
+			expect(logs[0]).toEqual(
+				expect.objectContaining({ automation_content: "TC-42" }),
+			);
 		});
 
-		it("omits test_case when qtest annotation is missing", () => {
+		it("uses the test title as automation_content when the qtest annotation is missing", () => {
 			const reporter = new QTestReporter();
 			const testCase = fakeTestCase("no annotation");
 			testCase.annotations = [{ type: "other", description: "ignored" }];
 			reporter.onTestEnd(testCase, fakeTestResult("passed", 100));
 			const logs = (reporter as unknown as { testLogs: unknown[] }).testLogs;
-			expect(logs[0]).not.toHaveProperty("test_case");
+			expect(logs[0]).toEqual(
+				expect.objectContaining({ automation_content: "no annotation" }),
+			);
+		});
+
+		it("keeps the annotation fingerprint and adds a failing step for annotated failures", () => {
+			const reporter = new QTestReporter();
+			const testCase = fakeTestCase("annotated failure");
+			testCase.annotations = [{ type: "qtest", description: "TC-99" }];
+			reporter.onTestEnd(
+				testCase,
+				fakeTestResult("failed", 100, [fakeTestError("boom")]),
+			);
+			const logs = (reporter as unknown as { testLogs: unknown[] }).testLogs;
+			expect(logs[0]).toEqual(
+				expect.objectContaining({
+					automation_content: "TC-99",
+					test_step_logs: [expect.objectContaining({ actual_result: "boom" })],
+				}),
+			);
 		});
 	});
 

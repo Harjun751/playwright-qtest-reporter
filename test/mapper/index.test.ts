@@ -96,18 +96,28 @@ describe("mapReport", () => {
 		});
 	});
 
-	it("puts failure detail into automation_content for failed tests", () => {
+	it("uses the test name as automation_content for every result", () => {
 		const result = mapReport(report, { executionDate: "2026-08-05" });
-		expect(result.test_logs[1]?.automation_content).toBe(
-			"Error: expect(received).toBe(expected)",
-		);
-		expect(result.test_logs[0]?.automation_content).toBe("logs in");
+		expect(result.test_logs.map((log) => log.automation_content)).toEqual([
+			"logs in",
+			"rejects bad password",
+			"skipped test",
+		]);
 	});
 
-	it("adds the failure message as a note for failed tests", () => {
+	it("puts failure detail into the failed test's test step", () => {
 		const result = mapReport(report, { executionDate: "2026-08-05" });
-		expect(result.test_logs[1]?.note).toBe("expect(received).toBe(expected)");
-		expect(result.test_logs[0]?.note).toBeUndefined();
+		expect(result.test_logs[1]?.test_step_logs).toEqual([
+			{
+				description: "Run test",
+				expected_result: "Test passes",
+				actual_result: "Error: expect(received).toBe(expected)",
+				status: "FAIL",
+				order: 1,
+			},
+		]);
+		expect(result.test_logs[0]?.test_step_logs).toBeUndefined();
+		expect(result.test_logs[2]?.test_step_logs).toBeUndefined();
 	});
 
 	it("defaults execution_date from the injected clock", () => {
@@ -142,7 +152,7 @@ describe("mapReport", () => {
 			suites: [{ ...suite, testCases: [{ ...restTc }] }],
 		};
 		const result = mapReport(noDetail, { executionDate: "2026-08-05" });
-		expect(result.test_logs[0]?.automation_content).toBe(
+		expect(result.test_logs[0]?.test_step_logs?.[0]?.actual_result).toBe(
 			"expect(received).toBe(expected)",
 		);
 	});

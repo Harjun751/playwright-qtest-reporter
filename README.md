@@ -63,6 +63,22 @@ reporter: [
 | `testSuiteId`    | —       | qTest test suite ID to attach results to           |
 | `parentModuleId` | —       | qTest parent module ID to attach results to        |
 
+### Linking test logs to qTest test cases
+
+Each test log carries an `automation_content` value that qTest uses as a fingerprint to look up (or auto-create) the matching Test Case. By default this is the test title. To use a stable identifier instead, annotate the test:
+
+```ts
+test("creates a customer", async ({ page }) => {
+	test.info().annotations.push({
+		type: "qtest",
+		description: "CustomerService.CreateCustomer",
+	});
+	// ...
+});
+```
+
+The annotation value is sent as `automation_content`, so qTest links the result to any existing Test Case with that Automation Content, or creates one on the first run. Failed tests also include a single test step whose `actual_result` holds the failure detail.
+
 ## CLI
 
 Validate your configuration:

@@ -46,7 +46,7 @@ Do not spend effort on minor style issues (tabs vs spaces, quote style, import o
 
 ## Key mechanisms
 
-- **Test Design linking** — a Playwright test links to a qTest case via `annotation: { type: "qtest", description: "<id>" }`. The reporter reads this to attach results; `sync` reads it to classify tests as already-linked.
+- **Test Design linking** — a Playwright test links to a qTest case via `annotation: { type: "qtest", description: "<automation-content>" }`. The reporter reads it and sends the value as `automation_content` (the Test Log fingerprint), falling back to the test title when the annotation is absent; `sync` reads it to classify tests as already-linked. Failure detail is placed in a single `test_step_logs` entry's `actual_result`.
 - **Submission API** — test logs are submitted to the **v3.1** endpoint `projects/{projectId}/test-runs/0/auto-test-logs?type=automation`, which returns a queue job id. Job status is polled at `projects/queue-processing/{jobId}` (v3). `waitForJob` polls every 2s with a 5-minute timeout by default.
 - **Retries** — the client retries transient failures (429/500/502/503/504 and network errors) up to `maxRetries` (default 3) with exponential backoff (base delay 500ms). 401 maps to `AuthError`.
 - **`sync` discovery** — shells out to `playwright test --list --reporter=json` from `process.cwd()`, using `require.resolve("@playwright/test/cli")` from the consumer's directory (Playwright is a peer dependency). The output may carry a non-JSON preamble, so the first line starting with `{` is located before parsing. Specs are deduplicated by `file:title` so tests don't repeat across browser projects.
