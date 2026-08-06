@@ -238,7 +238,41 @@ describe("sync", () => {
 		);
 	});
 
-	it("prompts for a module when --parent-module is omitted", async () => {
+	it("creates test cases without a parent module when no flags are passed", async () => {
+		vi.stubEnv("QTEST_BASE_URL", "https://qtest.example.com");
+		vi.stubEnv("QTEST_API_TOKEN", "secret-token");
+		vi.stubEnv("QTEST_PROJECT_ID", "42");
+		vi.mocked(spawnSync).mockReturnValue(
+			spawnResult(
+				mockListOutput([{ file: "login.spec.ts", title: "login fails" }]),
+			),
+		);
+		let createBody: string | null = null;
+		const fetchMock = vi
+			.fn<typeof fetch>()
+			.mockResolvedValueOnce(
+				jsonResponse(200, { items: [], total: 0, page: 1, pageSize: 100 }),
+			)
+			.mockImplementation((_input, init) => {
+				createBody = init?.body as string;
+				return Promise.resolve(
+					jsonResponse(200, { id: 11, pid: "TC-11", name: "login fails" }),
+				);
+			});
+		vi.stubGlobal("fetch", fetchMock);
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+
+		const code = await runCli(["sync"]);
+
+		expect(code).toBe(0);
+		expect(select).not.toHaveBeenCalled();
+		expect(createBody).toBe(JSON.stringify({ name: "login fails" }));
+		expect(log).toHaveBeenCalledWith(
+			"Test Design synchronized: 0 linked, 1 created.",
+		);
+	});
+
+	it("prompts for a module when --interactive is passed", async () => {
 		vi.stubEnv("QTEST_BASE_URL", "https://qtest.example.com");
 		vi.stubEnv("QTEST_API_TOKEN", "secret-token");
 		vi.stubEnv("QTEST_PROJECT_ID", "42");
@@ -261,7 +295,7 @@ describe("sync", () => {
 		vi.stubGlobal("fetch", fetchMock);
 		const log = vi.spyOn(console, "log").mockImplementation(() => {});
 
-		const code = await runCli(["sync"]);
+		const code = await runCli(["sync", "--interactive"]);
 
 		expect(code).toBe(0);
 		expect(select).toHaveBeenCalled();

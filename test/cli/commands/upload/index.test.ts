@@ -39,6 +39,7 @@ afterAll(() => {
 
 afterEach(() => {
 	vi.restoreAllMocks();
+	vi.clearAllMocks();
 	vi.unstubAllEnvs();
 	vi.unstubAllGlobals();
 });
@@ -176,6 +177,40 @@ describe("upload", () => {
 		};
 		expect(body.test_suite).toBe(5);
 		expect(body.parent_module).toBe(8);
+	});
+
+	it("omits the test suite and lets qTest auto-create by default", async () => {
+		vi.stubEnv("QTEST_BASE_URL", "https://qtest.example.com");
+		vi.stubEnv("QTEST_API_TOKEN", "secret-token");
+		vi.stubEnv("QTEST_PROJECT_ID", "42");
+		writeFileSync(reportPath("autocreate.xml"), VALID_REPORT_XML);
+
+		let submittedBody: string | null = null;
+		const fetchMock = vi
+			.fn<typeof fetch>()
+			.mockImplementation((input, init) => {
+				const url = String(input);
+				if (url.includes("auto-test-logs")) {
+					submittedBody = init?.body as string;
+					return Promise.resolve(
+						jsonResponse(201, { id: 99, state: "IN_WAITING" }),
+					);
+				}
+				throw new Error(`Unmocked URL: ${url}`);
+			});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const code = await runCli([
+			"upload",
+			reportPath("autocreate.xml"),
+			"--no-wait",
+		]);
+
+		expect(code).toBe(0);
+		const body = JSON.parse(submittedBody ?? "{}") as {
+			test_suite?: number;
+		};
+		expect(body.test_suite).toBeUndefined();
 	});
 
 	it("returns a non-zero exit code for an invalid option value", async () => {
