@@ -11,6 +11,8 @@ import type { AutomationRequest, TestLog } from "../core/qtest/types.js";
 import { toDateString } from "../utils/date.js";
 import { ApiError } from "../utils/errors.js";
 import { createLogger } from "../utils/logger.js";
+import type { PlaywrightAttachment } from "./attachments.js";
+import { toQTestAttachments } from "./attachments.js";
 
 const logger = createLogger("reporter");
 
@@ -23,6 +25,10 @@ export interface QTestReporterOptions {
 
 export default class QTestReporter implements Reporter {
 	private readonly testLogs: TestLog[] = [];
+	private readonly pendingAttachments = new Map<
+		number,
+		PlaywrightAttachment[]
+	>();
 	private readonly options: QTestReporterOptions;
 
 	constructor(options: QTestReporterOptions = {}) {
@@ -61,6 +67,9 @@ export default class QTestReporter implements Reporter {
 		}
 
 		this.testLogs.push(testLog);
+		if (result.attachments.length > 0) {
+			this.pendingAttachments.set(this.testLogs.length - 1, result.attachments);
+		}
 	}
 
 	async onEnd(): Promise<void> {
@@ -83,6 +92,7 @@ export default class QTestReporter implements Reporter {
 
 		try {
 			const config = loadConfig();
+			await this.populateAttachments(config.maxAttachmentSize);
 			const request: AutomationRequest = {
 				execution_date: toDateString(new Date()),
 				test_logs: this.testLogs,
@@ -123,6 +133,19 @@ export default class QTestReporter implements Reporter {
 				console.log(
 					`qTest reporter: ${(error as Error).message ?? "unknown error"}`,
 				);
+			}
+		}
+	}
+
+	private async populateAttachments(maxSizeBytes: number): Promise<void> {
+		for (const [index, attachments] of this.pendingAttachments) {
+			const testLog = this.testLogs[index];
+			if (testLog === undefined) {
+				continue;
+			}
+			const converted = await toQTestAttachments(attachments, maxSizeBytes);
+			if (converted.length > 0) {
+				testLog.attachments = converted;
 			}
 		}
 	}

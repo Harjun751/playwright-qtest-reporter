@@ -9,6 +9,11 @@ export const QTestConfigSchema = z.object({
 		.enum(["trace", "debug", "info", "warn", "error", "silent"])
 		.default(DEFAULTS.logLevel),
 	runId: z.coerce.number().int().positive().optional(),
+	maxAttachmentSize: z.coerce
+		.number()
+		.int()
+		.positive()
+		.default(DEFAULTS.maxAttachmentSize),
 });
 
 export type QTestConfig = z.infer<typeof QTestConfigSchema>;

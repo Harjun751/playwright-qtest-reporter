@@ -29,6 +29,7 @@ Both the CLI and the reporter read configuration from environment variables:
 | `QTEST_PROJECT_ID`    | yes      | —                           | qTest project ID to upload to                |
 | `QTEST_LOG_LEVEL`     | no       | `info`                      | Logger verbosity (`trace`/`debug`/`info`/`warn`/`error`/`silent`) |
 | `QTEST_RUN_ID`        | no       | —                           | qTest run ID (reserved for future use)       |
+| `QTEST_MAX_ATTACHMENT_SIZE` | no | `10485760` (10 MB)      | Max attachment size in bytes; larger files are skipped |
 | `QTEST_DEBUG`         | no       | —                           | Set to any value to enable debug logging     |
 
 The API token is managed in qTest under **Profile → Personal Access Token**. The project ID is visible in the URL when you open a project (`https://<instance>.tricentis.com/qtest/projects/<id>/...`).
@@ -78,6 +79,10 @@ test("creates a customer", async ({ page }) => {
 ```
 
 The annotation value is sent as `automation_content`, so qTest links the result to any existing Test Case with that Automation Content, or creates one on the first run. Failed tests also include a single test step whose `actual_result` holds the failure detail.
+
+### Attachments
+
+Screenshots, videos, and traces captured during a test are uploaded as base64 inline attachments on the matching test log. What gets captured is controlled by your Playwright config (`screenshot`, `video`, `trace` options and any `page.screenshot()`/`test.info().attach()` calls) — the reporter passes through whatever Playwright records. Control the allowed size with `QTEST_MAX_ATTACHMENT_SIZE`; oversized or unreadable files are skipped with a warning instead of failing the run. Note that the JUnit-based CLI path does not support attachments, since the JUnit format carries no file data.
 
 ## CLI
 

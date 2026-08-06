@@ -31,6 +31,7 @@ function fakeTestResult(
 	status: TestResult["status"],
 	duration: number,
 	errors: TestError[] = [],
+	attachments: TestResult["attachments"] = [],
 ): TestResult {
 	return {
 		status,
@@ -38,7 +39,7 @@ function fakeTestResult(
 		errors,
 		startTime: new Date("2026-08-05T10:00:00Z"),
 		annotations: [],
-		attachments: [],
+		attachments,
 		parallelIndex: 0,
 		retry: 0,
 		stderr: [],
@@ -375,6 +376,103 @@ describe("QTestReporter", () => {
 				skipCreatingAutomationModule?: boolean;
 			};
 			expect(body.skipCreatingAutomationModule).toBe(true);
+		});
+
+		it("includes base64 attachment data in the submission", async () => {
+			vi.stubEnv("QTEST_BASE_URL", "https://qtest.example.com");
+			vi.stubEnv("QTEST_API_TOKEN", "secret-token");
+			vi.stubEnv("QTEST_PROJECT_ID", "42");
+			let submittedBody: string | null = null;
+			const fetchMock = vi
+				.fn<typeof fetch>()
+				.mockImplementation((input, init) => {
+					const url = String(input);
+					if (url.includes("auto-test-logs")) {
+						submittedBody = init?.body as string;
+						return Promise.resolve(
+							jsonResponse(201, { id: 7, state: "IN_WAITING" }),
+						);
+					}
+					throw new Error(`Unmocked URL: ${url}`);
+				});
+			vi.stubGlobal("fetch", fetchMock);
+
+			const reporter = new QTestReporter();
+			reporter.onTestEnd(
+				fakeTestCase("a test"),
+				fakeTestResult(
+					"failed",
+					100,
+					[fakeTestError("boom")],
+					[
+						{
+							name: "screenshot",
+							body: Buffer.from("png-bytes"),
+							contentType: "image/png",
+						},
+					],
+				),
+			);
+
+			await reporter.onEnd();
+
+			const body = JSON.parse(submittedBody ?? "{}") as {
+				test_logs: {
+					attachments: { name: string; content_type: string; data: string }[];
+				}[];
+			};
+			expect(body.test_logs[0]?.attachments).toEqual([
+				{
+					name: "screenshot",
+					content_type: "image/png",
+					data: Buffer.from("png-bytes").toString("base64"),
+				},
+			]);
+		});
+
+		it("skips attachments larger than the configured max size", async () => {
+			vi.stubEnv("QTEST_BASE_URL", "https://qtest.example.com");
+			vi.stubEnv("QTEST_API_TOKEN", "secret-token");
+			vi.stubEnv("QTEST_PROJECT_ID", "42");
+			vi.stubEnv("QTEST_MAX_ATTACHMENT_SIZE", "4");
+			let submittedBody: string | null = null;
+			const fetchMock = vi
+				.fn<typeof fetch>()
+				.mockImplementation((input, init) => {
+					const url = String(input);
+					if (url.includes("auto-test-logs")) {
+						submittedBody = init?.body as string;
+						return Promise.resolve(
+							jsonResponse(201, { id: 7, state: "IN_WAITING" }),
+						);
+					}
+					throw new Error(`Unmocked URL: ${url}`);
+				});
+			vi.stubGlobal("fetch", fetchMock);
+
+			const reporter = new QTestReporter();
+			reporter.onTestEnd(
+				fakeTestCase("a test"),
+				fakeTestResult(
+					"failed",
+					100,
+					[fakeTestError("boom")],
+					[
+						{
+							name: "screenshot",
+							body: Buffer.from("too-large-content"),
+							contentType: "image/png",
+						},
+					],
+				),
+			);
+
+			await reporter.onEnd();
+
+			const body = JSON.parse(submittedBody ?? "{}") as {
+				test_logs: { attachments?: unknown[] }[];
+			};
+			expect(body.test_logs[0]).not.toHaveProperty("attachments");
 		});
 
 		it("logs errors instead of throwing when the request fails", async () => {

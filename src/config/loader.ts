@@ -10,6 +10,7 @@ const ENV_MAP = {
 	QTEST_PROJECT_ID: "projectId",
 	QTEST_LOG_LEVEL: "logLevel",
 	QTEST_RUN_ID: "runId",
+	QTEST_MAX_ATTACHMENT_SIZE: "maxAttachmentSize",
 } as const;
 
 export interface LoadConfigOptions {
