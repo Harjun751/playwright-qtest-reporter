@@ -9,13 +9,15 @@ import {
 import type { TestCase } from "../../../core/qtest/types.js";
 import { createLogger } from "../../../utils/logger.js";
 import { integerOption } from "../../helpers.js";
+import { promptForModule } from "../../prompt.js";
 import { listPlaywrightTests, type SpecWithAnnotations } from "./discovery.js";
 
 const logger = createLogger("cli/sync");
 
 interface SyncCommandOptions {
-	parentModule: number;
+	parentModule?: number;
 	dryRun?: boolean;
+	interactive?: boolean;
 }
 
 interface TestEntry {
@@ -29,11 +31,12 @@ export function registerSyncCommand(program: Command): void {
 	program
 		.command("sync")
 		.description("Sync Playwright test cases to qTest Test Design")
-		.requiredOption(
+		.option(
 			"--parent-module <id>",
 			"qTest module ID to create test cases under",
 			integerOption,
 		)
+		.option("--interactive", "Prompt to select a module interactively")
 		.option("--dry-run", "Preview changes without creating test cases")
 		.action(async (options: SyncCommandOptions) => {
 			await executeSync(options);
@@ -49,6 +52,16 @@ async function executeSync(options: SyncCommandOptions): Promise<void> {
 	}
 	logger.debug(`discovered ${specs.length} unique spec(s)`);
 
+	const client = new QTestClient({
+		baseUrl: config.baseUrl,
+		apiToken: config.apiToken,
+	});
+	let parentModule = options.parentModule;
+	if (parentModule === undefined && options.interactive) {
+		parentModule = await promptForModule(client, config.projectId);
+	}
+	logger.debug(`using module ${parentModule}`);
+
 	const { entries } = classifySpecs(specs);
 	const unlinked = entries.filter((e) => e.status === "new");
 	logger.debug(
@@ -56,11 +69,13 @@ async function executeSync(options: SyncCommandOptions): Promise<void> {
 	);
 
 	if (unlinked.length > 0) {
-		const client = new QTestClient({
-			baseUrl: config.baseUrl,
-			apiToken: config.apiToken,
-		});
-		await syncUnlinked(client, unlinked, config.projectId, options);
+		await syncUnlinked(
+			client,
+			unlinked,
+			config.projectId,
+			parentModule,
+			options.dryRun ?? false,
+		);
 	}
 
 	printTable(entries);
@@ -99,15 +114,12 @@ async function syncUnlinked(
 	client: QTestClient,
 	unlinked: TestEntry[],
 	projectId: number,
-	options: SyncCommandOptions,
+	parentModule: number | undefined,
+	dryRun: boolean,
 ): Promise<void> {
-	const existing = await listAllTestCases(
-		client,
-		projectId,
-		options.parentModule,
-	);
+	const existing = await listAllTestCases(client, projectId, parentModule);
 	logger.debug(
-		`existing test cases under module ${options.parentModule}: ${existing.length}`,
+		`existing test cases under module ${parentModule}: ${existing.length}`,
 	);
 
 	const existingByName = new Map<string, TestCase>();
@@ -124,10 +136,10 @@ async function syncUnlinked(
 				entry.pid = pid;
 			}
 			logger.debug(`matched "${entry.name}" to ${entry.pid ?? "unknown"}`);
-		} else if (!options.dryRun) {
+		} else if (!dryRun) {
 			const created = await createTestCase(client, projectId, {
 				name: entry.name,
-				parent_id: options.parentModule,
+				...(parentModule !== undefined ? { parent_id: parentModule } : {}),
 			});
 			const pid = extractPid(created);
 			if (pid !== undefined) {

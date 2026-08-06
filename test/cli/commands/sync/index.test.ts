@@ -67,8 +67,12 @@ function spawnResult(output: string) {
 vi.mock("node:child_process", () => ({
 	spawnSync: vi.fn(),
 }));
+vi.mock("@inquirer/prompts", () => ({
+	select: vi.fn(),
+}));
 
 import { spawnSync } from "node:child_process";
+import { select } from "@inquirer/prompts";
 
 describe("sync", () => {
 	afterEach(() => {
@@ -231,6 +235,38 @@ describe("sync", () => {
 		expect(code).toBe(0);
 		expect(log).toHaveBeenCalledWith(
 			expect.stringContaining("Test Design synchronized: 0 linked, 1 created."),
+		);
+	});
+
+	it("prompts for a module when --parent-module is omitted", async () => {
+		vi.stubEnv("QTEST_BASE_URL", "https://qtest.example.com");
+		vi.stubEnv("QTEST_API_TOKEN", "secret-token");
+		vi.stubEnv("QTEST_PROJECT_ID", "42");
+		vi.mocked(spawnSync).mockReturnValue(
+			spawnResult(
+				mockListOutput([{ file: "login.spec.ts", title: "login fails" }]),
+			),
+		);
+		vi.mocked(select).mockResolvedValue(7);
+
+		const fetchMock = vi
+			.fn<typeof fetch>()
+			.mockResolvedValueOnce(jsonResponse(200, [{ id: 7, name: "Billing" }]))
+			.mockResolvedValueOnce(
+				jsonResponse(200, { items: [], total: 0, page: 1, pageSize: 100 }),
+			)
+			.mockResolvedValueOnce(
+				jsonResponse(200, { id: 11, pid: "TC-11", name: "login fails" }),
+			);
+		vi.stubGlobal("fetch", fetchMock);
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+
+		const code = await runCli(["sync"]);
+
+		expect(code).toBe(0);
+		expect(select).toHaveBeenCalled();
+		expect(log).toHaveBeenCalledWith(
+			"Test Design synchronized: 0 linked, 1 created.",
 		);
 	});
 });
