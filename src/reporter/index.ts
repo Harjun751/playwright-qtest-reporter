@@ -43,16 +43,17 @@ export default class QTestReporter implements Reporter {
 		const startTime = result.startTime;
 		const endTime = new Date(startTime.getTime() + result.duration);
 
+		const browserName = this.buildBrowserName(test);
 		const testLog: TestLog = {
-			name: test
-				.titlePath()
-				.filter((p) => p !== "")
-				.join(" › "),
+			name: test.title,
 			status: QTEST_STATUS_BY_RESULT[result.status] ?? "FAIL",
 			exe_start_date: startTime.toISOString(),
 			exe_end_date: endTime.toISOString(),
 			automation_content: stripAnsi(this.buildAutomationContent(test)),
 		};
+		if (browserName !== undefined) {
+			testLog.note = browserName;
+		}
 
 		if (result.status === "failed" || result.status === "timedOut") {
 			testLog.test_step_logs = [
@@ -158,6 +159,14 @@ export default class QTestReporter implements Reporter {
 			return qtestAnnotation.description;
 		}
 		return test.title;
+	}
+
+	private buildBrowserName(test: TestCase): string | undefined {
+		const first = test.titlePath().find((p) => p !== "");
+		if (first === undefined || first === test.title) {
+			return undefined;
+		}
+		return first;
 	}
 
 	private buildFailureDetail(result: TestResult, fallback: string): string {

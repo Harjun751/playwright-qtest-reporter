@@ -77,16 +77,26 @@ describe("QTestReporter", () => {
 			);
 		});
 
-		it("uses the titlePath as the test name, skipping empty segments", () => {
+		it("uses the test title as the name, ignoring project prefixes", () => {
 			const reporter = new QTestReporter();
 			reporter.onTestEnd(
-				fakeTestCase("inner", ["", "root", "inner"]),
+				fakeTestCase("inner", ["", "chromium", "root", "inner"]),
 				fakeTestResult("passed", 100),
 			);
 			const logs = (reporter as unknown as { testLogs: unknown[] }).testLogs;
 			expect(logs[0]).toEqual(
-				expect.objectContaining({ name: "root › inner" }),
+				expect.objectContaining({ name: "inner", note: "chromium" }),
 			);
+		});
+
+		it("omits note when the test has no project prefix", () => {
+			const reporter = new QTestReporter();
+			reporter.onTestEnd(
+				fakeTestCase("plain", ["", "plain"]),
+				fakeTestResult("passed", 100),
+			);
+			const logs = (reporter as unknown as { testLogs: unknown[] }).testLogs;
+			expect(logs[0]).not.toHaveProperty("note");
 		});
 
 		it("maps a failed test to FAIL with a failing test step", () => {

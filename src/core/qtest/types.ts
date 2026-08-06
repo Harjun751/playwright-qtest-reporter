@@ -31,6 +31,7 @@ export interface TestLog {
 	exe_start_date: string;
 	exe_end_date: string;
 	automation_content: string;
+	note?: string;
 	attachments?: Attachment[];
 	test_step_logs?: TestStepLog[];
 	module_names?: string[];
