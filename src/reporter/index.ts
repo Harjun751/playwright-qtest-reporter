@@ -1,6 +1,10 @@
 import type { Reporter, TestCase, TestResult } from "@playwright/test/reporter";
 import stripAnsi from "strip-ansi";
-import { loadConfig } from "../config/loader.js";
+import {
+	loadConfig,
+	loadReporterOptionsFromEnvironment,
+} from "../config/loader.js";
+import type { QTestReporterOptions } from "../config/schema.js";
 import { QTestClient } from "../core/qtest/client.js";
 import {
 	QTEST_ANNOTATION_TYPE,
@@ -14,14 +18,9 @@ import { createLogger } from "../utils/logger.js";
 import type { PlaywrightAttachment } from "./attachments.js";
 import { toQTestAttachments } from "./attachments.js";
 
-const logger = createLogger("reporter");
+export type { QTestReporterOptions };
 
-export interface QTestReporterOptions {
-	wait?: boolean;
-	testSuiteId?: number;
-	parentModuleId?: number;
-	skipAutomationModule?: boolean;
-}
+const logger = createLogger("reporter");
 
 export default class QTestReporter implements Reporter {
 	private readonly testLogs: TestLog[] = [];
@@ -32,7 +31,11 @@ export default class QTestReporter implements Reporter {
 	private readonly options: QTestReporterOptions;
 
 	constructor(options: QTestReporterOptions = {}) {
-		this.options = options;
+		this.options = {
+			...loadReporterOptionsFromEnvironment(),
+			...options,
+		};
+		logger.debug(`Reporter options loaded in from environment: \n ${JSON.stringify(this.options)}`);
 	}
 
 	printsToStdio(): boolean {

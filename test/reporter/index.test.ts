@@ -388,6 +388,226 @@ describe("QTestReporter", () => {
 			expect(body.skipCreatingAutomationModule).toBe(true);
 		});
 
+		it("reads testSuiteId and parentModuleId from the environment", async () => {
+			vi.stubEnv("QTEST_BASE_URL", "https://qtest.example.com");
+			vi.stubEnv("QTEST_API_TOKEN", "secret-token");
+			vi.stubEnv("QTEST_PROJECT_ID", "42");
+			vi.stubEnv("QTEST_TEST_SUITE_ID", "5");
+			vi.stubEnv("QTEST_PARENT_MODULE_ID", "8");
+			let submittedBody: string | null = null;
+			const fetchMock = vi
+				.fn<typeof fetch>()
+				.mockImplementation((input, init) => {
+					const url = String(input);
+					if (url.includes("auto-test-logs")) {
+						submittedBody = init?.body as string;
+						return Promise.resolve(
+							jsonResponse(201, { id: 7, state: "IN_WAITING" }),
+						);
+					}
+					throw new Error(`Unmocked URL: ${url}`);
+				});
+			vi.stubGlobal("fetch", fetchMock);
+
+			const reporter = new QTestReporter();
+			reporter.onTestEnd(fakeTestCase("a test"), fakeTestResult("passed", 100));
+
+			await reporter.onEnd();
+
+			const body = JSON.parse(submittedBody ?? "{}") as {
+				test_suite?: number;
+				parent_module?: number;
+			};
+			expect(body.test_suite).toBe(5);
+			expect(body.parent_module).toBe(8);
+		});
+
+		it("reads prefixed ids from the environment", async () => {
+			vi.stubEnv("QTEST_BASE_URL", "https://qtest.example.com");
+			vi.stubEnv("QTEST_API_TOKEN", "secret-token");
+			vi.stubEnv("QTEST_PROJECT_ID", "42");
+			vi.stubEnv("QTEST_TEST_SUITE_ID", "TS-5");
+			vi.stubEnv("QTEST_PARENT_MODULE_ID", "MD-8");
+			let submittedBody: string | null = null;
+			const fetchMock = vi
+				.fn<typeof fetch>()
+				.mockImplementation((input, init) => {
+					const url = String(input);
+					if (url.includes("auto-test-logs")) {
+						submittedBody = init?.body as string;
+						return Promise.resolve(
+							jsonResponse(201, { id: 7, state: "IN_WAITING" }),
+						);
+					}
+					throw new Error(`Unmocked URL: ${url}`);
+				});
+			vi.stubGlobal("fetch", fetchMock);
+
+			const reporter = new QTestReporter();
+			reporter.onTestEnd(fakeTestCase("a test"), fakeTestResult("passed", 100));
+
+			await reporter.onEnd();
+
+			const body = JSON.parse(submittedBody ?? "{}") as {
+				test_suite?: string;
+				parent_module?: string;
+			};
+			expect(body.test_suite).toBe("TS-5");
+			expect(body.parent_module).toBe("MD-8");
+		});
+
+		it("passes prefixed ids from config file options through", async () => {
+			vi.stubEnv("QTEST_BASE_URL", "https://qtest.example.com");
+			vi.stubEnv("QTEST_API_TOKEN", "secret-token");
+			vi.stubEnv("QTEST_PROJECT_ID", "42");
+			let submittedBody: string | null = null;
+			const fetchMock = vi
+				.fn<typeof fetch>()
+				.mockImplementation((input, init) => {
+					const url = String(input);
+					if (url.includes("auto-test-logs")) {
+						submittedBody = init?.body as string;
+						return Promise.resolve(
+							jsonResponse(201, { id: 7, state: "IN_WAITING" }),
+						);
+					}
+					throw new Error(`Unmocked URL: ${url}`);
+				});
+			vi.stubGlobal("fetch", fetchMock);
+
+			const reporter = new QTestReporter({
+				testSuiteId: "TS-5",
+				parentModuleId: "MD-8",
+			});
+			reporter.onTestEnd(fakeTestCase("a test"), fakeTestResult("passed", 100));
+
+			await reporter.onEnd();
+
+			const body = JSON.parse(submittedBody ?? "{}") as {
+				test_suite?: string;
+				parent_module?: string;
+			};
+			expect(body.test_suite).toBe("TS-5");
+			expect(body.parent_module).toBe("MD-8");
+		});
+
+		it("prefers config file options over environment variables", async () => {
+			vi.stubEnv("QTEST_BASE_URL", "https://qtest.example.com");
+			vi.stubEnv("QTEST_API_TOKEN", "secret-token");
+			vi.stubEnv("QTEST_PROJECT_ID", "42");
+			vi.stubEnv("QTEST_TEST_SUITE_ID", "TS-5");
+			let submittedBody: string | null = null;
+			const fetchMock = vi
+				.fn<typeof fetch>()
+				.mockImplementation((input, init) => {
+					const url = String(input);
+					if (url.includes("auto-test-logs")) {
+						submittedBody = init?.body as string;
+						return Promise.resolve(
+							jsonResponse(201, { id: 7, state: "IN_WAITING" }),
+						);
+					}
+					throw new Error(`Unmocked URL: ${url}`);
+				});
+			vi.stubGlobal("fetch", fetchMock);
+
+			const reporter = new QTestReporter({ testSuiteId: 99 });
+			reporter.onTestEnd(fakeTestCase("a test"), fakeTestResult("passed", 100));
+
+			await reporter.onEnd();
+
+			const body = JSON.parse(submittedBody ?? "{}") as {
+				test_suite?: number;
+			};
+			expect(body.test_suite).toBe(99);
+		});
+
+		it("waits for job completion when QTEST_WAIT is set", async () => {
+			vi.stubEnv("QTEST_BASE_URL", "https://qtest.example.com");
+			vi.stubEnv("QTEST_API_TOKEN", "secret-token");
+			vi.stubEnv("QTEST_PROJECT_ID", "42");
+			vi.stubEnv("QTEST_WAIT", "true");
+			const fetchMock = vi
+				.fn<typeof fetch>()
+				.mockResolvedValueOnce(
+					jsonResponse(201, { id: 1, state: "IN_WAITING" }),
+				)
+				.mockResolvedValueOnce(jsonResponse(200, { id: 1, state: "SUCCESS" }));
+			vi.stubGlobal("fetch", fetchMock);
+
+			const reporter = new QTestReporter();
+			reporter.onTestEnd(fakeTestCase("a test"), fakeTestResult("passed", 100));
+
+			const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+			await reporter.onEnd();
+
+			expect(fetchMock).toHaveBeenCalledTimes(2);
+			expect(logSpy).toHaveBeenCalledWith("qTest job #1 completed: SUCCESS");
+		});
+
+		it("sets skipCreatingAutomationModule when QTEST_SKIP_AUTOMATION_MODULE is set", async () => {
+			vi.stubEnv("QTEST_BASE_URL", "https://qtest.example.com");
+			vi.stubEnv("QTEST_API_TOKEN", "secret-token");
+			vi.stubEnv("QTEST_PROJECT_ID", "42");
+			vi.stubEnv("QTEST_SKIP_AUTOMATION_MODULE", "true");
+			let submittedBody: string | null = null;
+			const fetchMock = vi
+				.fn<typeof fetch>()
+				.mockImplementation((input, init) => {
+					const url = String(input);
+					if (url.includes("auto-test-logs")) {
+						submittedBody = init?.body as string;
+						return Promise.resolve(
+							jsonResponse(201, { id: 7, state: "IN_WAITING" }),
+						);
+					}
+					throw new Error(`Unmocked URL: ${url}`);
+				});
+			vi.stubGlobal("fetch", fetchMock);
+
+			const reporter = new QTestReporter();
+			reporter.onTestEnd(fakeTestCase("a test"), fakeTestResult("passed", 100));
+
+			await reporter.onEnd();
+
+			const body = JSON.parse(submittedBody ?? "{}") as {
+				skipCreatingAutomationModule?: boolean;
+			};
+			expect(body.skipCreatingAutomationModule).toBe(true);
+		});
+
+		it("ignores invalid env values for reporter options", async () => {
+			vi.stubEnv("QTEST_BASE_URL", "https://qtest.example.com");
+			vi.stubEnv("QTEST_API_TOKEN", "secret-token");
+			vi.stubEnv("QTEST_PROJECT_ID", "42");
+			vi.stubEnv("QTEST_TEST_SUITE_ID", "abc");
+			vi.stubEnv("QTEST_WAIT", "maybe");
+			let submittedBody: string | null = null;
+			const fetchMock = vi
+				.fn<typeof fetch>()
+				.mockImplementation((input, init) => {
+					const url = String(input);
+					if (url.includes("auto-test-logs")) {
+						submittedBody = init?.body as string;
+						return Promise.resolve(
+							jsonResponse(201, { id: 7, state: "IN_WAITING" }),
+						);
+					}
+					throw new Error(`Unmocked URL: ${url}`);
+				});
+			vi.stubGlobal("fetch", fetchMock);
+
+			const reporter = new QTestReporter();
+			reporter.onTestEnd(fakeTestCase("a test"), fakeTestResult("passed", 100));
+
+			await reporter.onEnd();
+
+			const body = JSON.parse(submittedBody ?? "{}") as {
+				test_suite?: number;
+			};
+			expect(body.test_suite).toBeUndefined();
+		});
+
 		it("includes base64 attachment data in the submission", async () => {
 			vi.stubEnv("QTEST_BASE_URL", "https://qtest.example.com");
 			vi.stubEnv("QTEST_API_TOKEN", "secret-token");
