@@ -10,9 +10,7 @@ Upload Playwright test results to [qTest](https://www.tricentis.com/products/tri
 ## Installation
 
 ```sh
-npm install
-npm run build
-npm link
+npm install playwright-qtest-reporter
 ```
 
 ## Configuration

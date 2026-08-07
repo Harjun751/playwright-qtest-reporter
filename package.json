@@ -5,13 +5,36 @@
 	"type": "module",
 	"main": "./dist/reporter/index.js",
 	"exports": {
-		".": "./dist/reporter/index.js"
+		".": {
+			"types": "./dist/reporter/index.d.ts",
+			"default": "./dist/reporter/index.js"
+		}
+	},
+	"types": "./dist/reporter/index.d.ts",
+	"files": [
+		"dist"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Harjun751/playwright-qtest-reporter"
+	},
+	"keywords": [
+		"playwright",
+		"qtest",
+		"reporter",
+		"test-automation",
+		"tricentis"
+	],
+	"license": "MIT",
+	"engines": {
+		"node": ">=20"
 	},
 	"scripts": {
 		"test": "vitest run",
 		"check": "biome check --write",
 		"typecheck": "tsc --noEmit",
-		"build": "tsc -p tsconfig.build.json"
+		"build": "tsc -p tsconfig.build.json",
+		"prepublishOnly": "npm run build"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.7",
