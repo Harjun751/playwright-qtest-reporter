@@ -14,7 +14,7 @@ export async function submitTestLogs(
 		"submitting test logs",
 		`project=${projectId}`,
 		`testCount=${body.test_logs.length}`,
-		`body=${JSON.stringify(body)}`
+		`body=${JSON.stringify(body)}`,
 	);
 	return client.post<QueueProcessingResponse>(
 		`projects/${projectId}/test-runs/0/auto-test-logs`,

@@ -35,7 +35,9 @@ export default class QTestReporter implements Reporter {
 			...loadReporterOptionsFromEnvironment(),
 			...options,
 		};
-		logger.debug(`Reporter options loaded in from environment: \n ${JSON.stringify(this.options)}`);
+		logger.debug(
+			`Reporter options loaded in from environment: \n ${JSON.stringify(this.options)}`,
+		);
 	}
 
 	printsToStdio(): boolean {
