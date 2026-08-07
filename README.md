@@ -25,7 +25,6 @@ The reporter reads configuration from environment variables:
 | `QTEST_API_TOKEN`     | yes      | —                           | qTest API token                              |
 | `QTEST_PROJECT_ID`    | yes      | —                           | qTest project ID to upload to                |
 | `QTEST_LOG_LEVEL`     | no       | `info`                      | Logger verbosity (`trace`/`debug`/`info`/`warn`/`error`/`silent`) |
-| `QTEST_RUN_ID`        | no       | —                           | qTest run ID (reserved for future use)       |
 | `QTEST_MAX_ATTACHMENT_SIZE` | no | `10485760` (10 MB)      | Max attachment size in bytes; larger files are skipped |
 | `QTEST_DEBUG`         | no       | —                           | Set to any value to enable debug logging     |
 

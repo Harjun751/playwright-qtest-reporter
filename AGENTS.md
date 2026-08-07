@@ -8,7 +8,7 @@ Uploads Playwright test results to qTest as automated test logs via a single ent
 
 - **Playwright Reporter** — a `Reporter` implementation added to `playwright.config.ts`; submits results directly after each test run.
 
-The reporter reads config from environment variables (`QTEST_BASE_URL`, `QTEST_API_TOKEN`, `QTEST_PROJECT_ID`, `QTEST_LOG_LEVEL`, `QTEST_RUN_ID`, `QTEST_MAX_ATTACHMENT_SIZE`).
+The reporter reads config from environment variables (`QTEST_BASE_URL`, `QTEST_API_TOKEN`, `QTEST_PROJECT_ID`, `QTEST_LOG_LEVEL`, `QTEST_MAX_ATTACHMENT_SIZE`).
 
 ## Build & verify
 
