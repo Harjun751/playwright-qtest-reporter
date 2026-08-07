@@ -1,5 +1,5 @@
 {
-	"name": "qtest-playwright-integration",
+	"name": "playwright-qtest-reporter",
 	"version": "0.1.0",
 	"description": "A utility to pass information from playwright test runs to qtest via the qtest management API.",
 	"type": "module",

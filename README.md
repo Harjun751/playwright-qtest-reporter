@@ -1,4 +1,4 @@
-# qtest-playwright-integration
+# playwright-qtest-reporter
 
 Upload Playwright test results to [qTest](https://www.tricentis.com/products/tricentis-qtest) as automated test logs. Add the Playwright reporter to `playwright.config.ts` and results upload automatically after each test run.
 
@@ -39,7 +39,7 @@ Add the reporter to your Playwright config. Results are sent to qTest automatica
 import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
-	reporter: ["qtest-playwright-integration"],
+	reporter: ["playwright-qtest-reporter"],
 });
 ```
 
@@ -48,7 +48,7 @@ The reporter plays well with other reporters. For example, keep the built-in ter
 ```ts
 reporter: [
 	["list"],
-	["qtest-playwright-integration", { wait: true, testSuiteId: 5 }],
+	["playwright-qtest-reporter", { wait: true, testSuiteId: 5 }],
 ],
 ```
 
